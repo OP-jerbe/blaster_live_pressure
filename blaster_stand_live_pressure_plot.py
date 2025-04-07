@@ -6,7 +6,7 @@ from matplotlib.animation import FuncAnimation
 from pfeiffer_tpg26x import TPG261, SimulateTPG26x
 
 
-SIMULATION: bool = False
+SIMULATION: bool = True
 
 COM_PORT: str = 'COM6' # 'COM6' for AGC-100, 'COM4' for pfeiffer
 
@@ -21,15 +21,6 @@ def init_gauge_controller(simulation: bool) -> SimulateTPG26x | TPG261:
         return SimulateTPG26x()
     else:
         return TPG261(port=COM_PORT)
-
-def getPressure() -> float:
-    """Gets the current pressure reading from gauge controller"""
-    pressureRead, (status_code, status_string) = tpg.pressure_gauge(1)
-    if status_code != 0:
-        print(f'\nstatus code = {status_code}')
-        print(f'\nmessage = "{status_string}"')
-        print('\nSomething went wrong reading the data.')
-    return pressureRead
 
 
 tpg: TPG261 | SimulateTPG26x = init_gauge_controller(simulation=SIMULATION)
@@ -55,7 +46,7 @@ ax.grid(True, which='both')
 
 def animate(_) -> tuple[Line2D]:
     try:
-        pressure_reading = getPressure()
+        pressure_reading, _ = tpg.pressure_gauge()
         pressure_log.append(float(pressure_reading))
         time_log.append(datetime.now())
         x_vals.append(next(index))
