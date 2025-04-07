@@ -1,0 +1,14 @@
+name: blaster-live-pressure-env
+channels:
+  - defaults
+  - conda-forge
+dependencies:
+  - python=3.12
+  - numpy
+  - pandas
+  - matplotlib
+  - pyserial
+  - PySide6
+  - qt-material
+  - pyinstaller
+prefix: C:\Users\joshua\AppData\Local\anaconda3\envs\blaster-live-pressure-env
