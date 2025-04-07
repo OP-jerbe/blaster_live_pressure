@@ -8,6 +8,8 @@ from pfeiffer_tpg26x import TPG261, SimulateTPG26x
 
 SIMULATION = True
 
+COM_PORT = 'COM6'
+
 X_AXIS_WINDOW_RANGE = 30*1 # seconds*minutes
 
 
@@ -15,7 +17,7 @@ def init_gauge_controller(simulation=False) -> SimulateTPG26x | TPG261:
     if simulation:
         return SimulateTPG26x()
     else:
-        return TPG261(port='COM6')
+        return TPG261(port=COM_PORT)
 
 def getPressure():
     """Gets the current pressure reading from gauge controller"""
