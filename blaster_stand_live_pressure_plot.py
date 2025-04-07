@@ -69,6 +69,9 @@ def animate(i) -> tuple[Line2D]:
         ax.set_ylim(0.98 * min(ydata), 1.02 * max(ydata))
     return line,
 
-ani = FuncAnimation(fig, animate, interval=1000)
-plt.tight_layout()
-plt.show()
+try:
+    ani = FuncAnimation(fig, animate, interval=1000)
+    plt.tight_layout()
+    plt.show()
+finally:
+    tpg.close_port()
