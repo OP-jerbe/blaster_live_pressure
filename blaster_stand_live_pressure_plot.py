@@ -6,14 +6,17 @@ from matplotlib.animation import FuncAnimation
 from pfeiffer_tpg26x import TPG261, SimulateTPG26x
 
 
-SIMULATION: bool = True
+SIMULATION: bool = False
 
-COM_PORT: str = 'COM6'
+COM_PORT: str = 'COM6' # 'COM6' for AGC-100, 'COM4' for pfeiffer
 
-X_AXIS_WINDOW_RANGE: float = 30*1 # seconds*minutes
+SECONDS: int = 60
+MINUTES: int = 60
+HOURS: int = 1
+X_AXIS_WINDOW_RANGE: float = SECONDS * MINUTES * HOURS # ex: 60*1*1 = one minute; 60*60*1 = one hour; 60*60*6 = six hours
 
 
-def init_gauge_controller(simulation: bool=False) -> SimulateTPG26x | TPG261:
+def init_gauge_controller(simulation: bool) -> SimulateTPG26x | TPG261:
     if simulation:
         return SimulateTPG26x()
     else:
@@ -39,7 +42,10 @@ index: count = count()
 fig, ax = plt.subplots(frameon=True, edgecolor='k', linewidth=2, figsize=(4,3), dpi=290)
 line, = ax.plot([], [], c='tab:blue', label='Pressure', linewidth=1, marker='o', markersize=2)
 
-ax.set_title('Blaster Pressure Log')
+if SIMULATION:
+    ax.set_title('Simulated Blaster Pressure Log')
+else:
+    ax.set_title('Blaster Pressure Log')
 ax.set_yscale('log')
 ax.tick_params(axis='both', which='both', labelsize=6)
 ax.set_xlabel('Time (s)', fontsize=8)
