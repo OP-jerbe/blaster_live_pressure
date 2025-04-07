@@ -1,18 +1,21 @@
-# -*- coding: utf-8 -*-
-"""
-Created on Fri Apr 29 08:19:45 2022
-
-@author: Joshua
-"""
-#%% Import modules
 import matplotlib.pyplot as plt
 from matplotlib.lines import Line2D
 import datetime
 from itertools import count
 from matplotlib.animation import FuncAnimation
-from pfeiffer_tpg26x import TPG261 as TPG
+from pfeiffer_tpg26x import TPG261, SimulateTPG26x
 
-tpg = TPG(port='COM4')
+
+SIMULATION = True
+
+X_AXIS_WINDOW_RANGE = 30*1 # seconds*minutes
+
+
+def init_gauge_controller(simulation=False) -> SimulateTPG26x | TPG261:
+    if simulation:
+        return SimulateTPG26x()
+    else:
+        return TPG261(port='COM6')
 
 def getPressure():
     """Gets the current pressure reading from gauge controller"""
@@ -23,30 +26,26 @@ def getPressure():
         print('\nSomething went wrong reading the data.')
     return pressureRead
 
-#%% Define plotting function
+
+tpg = init_gauge_controller(simulation=SIMULATION)
+
 x_vals = []
 pressure_log = []
 time_log = []
 index = count()
 
-
-# Initialize the figure to plot to
-scale_factor = 1.23
-fig = plt.figure(frameon=True, dpi=290, edgecolor='k', linewidth=2, figsize=(4*scale_factor,3*scale_factor))
-
-# Set the plot window size
-x_window = 60*10 # seconds*minutes
-
-fig, ax = plt.subplots(figsize=(4*scale_factor, 3*scale_factor), dpi=290)
+fig, ax = plt.subplots(frameon=True, edgecolor='k', linewidth=2, figsize=(4,3), dpi=290)
 line, = ax.plot([], [], c='tab:blue', label='Pressure', linewidth=1, marker='o', markersize=2)
 
-ax.set_title('Pressure Log')
-ax.set_xlabel('Time (s)')
-ax.set_ylabel('Pressure (mBar)')
+ax.set_title('Blaster Pressure Log')
 ax.set_yscale('log')
+ax.tick_params(axis='both', which='both', labelsize=6)
+ax.set_xlabel('Time (s)', fontsize=8)
+ax.set_ylabel('Pressure (mBar)', fontsize=8)
 ax.grid(True, which='both')
 
-def animate(i) -> tuple[Line2D]:
+
+def animate(_) -> tuple[Line2D]:
     try:
         pressure_reading = getPressure()
         pressure_log.append(float(pressure_reading))
@@ -56,22 +55,31 @@ def animate(i) -> tuple[Line2D]:
         print('Did not record pressure data.')
 
     # Trim data
-    if len(x_vals) > x_window:
-        xdata = x_vals[-x_window:]
-        ydata = pressure_log[-x_window:]
+    if len(x_vals) > X_AXIS_WINDOW_RANGE:
+        xdata = x_vals[-X_AXIS_WINDOW_RANGE:]
+        ydata = pressure_log[-X_AXIS_WINDOW_RANGE:]
     else:
         xdata = x_vals
         ydata = pressure_log
 
     line.set_data(xdata, ydata)
-    ax.set_xlim(max(0, x_vals[-1] - x_window), x_vals[-1])
+    if len(x_vals) > 1:
+        ax.set_xlim(max(0, x_vals[-1] - X_AXIS_WINDOW_RANGE), x_vals[-1])
+    else:
+        ax.set_xlim(0,1)
     if ydata:
         ax.set_ylim(0.98 * min(ydata), 1.02 * max(ydata))
+
+    ax.tick_params(axis='both', which='both', labelsize=6)
+    ax.set_xlabel('Time (s)', fontsize=8)
+    ax.set_ylabel('Pressure (mBar)', fontsize=8)
+
+    fig.tight_layout()
+
     return line,
 
 try:
-    ani = FuncAnimation(fig, animate, interval=1000)
-    plt.tight_layout()
+    ani = FuncAnimation(fig, animate, interval=1000, cache_frame_data=False)
     plt.show()
 finally:
     tpg.close_port()
