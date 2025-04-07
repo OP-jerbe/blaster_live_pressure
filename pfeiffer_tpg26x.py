@@ -273,24 +273,21 @@ class TPG261(TPG26x):
 
 
 
-class MockTPG26x:
+class SimulateTPG26x:
     """Mock version of the TPG26x driver for testing without hardware."""
 
     def __init__(self, *args, **kwargs):
         self._open = True
 
-    def program_number(self):
-        return "Mock Firmware v1.0"
-
     def pressure_gauge(self, gauge=1):
-        value = round(random.uniform(1e-5, 1e-2), 6)  # Random pressure
+        value = round(random.uniform(1e-7, 2e-7), 9)  # Random pressure
         status_code = 0
         return value, (status_code, MEASUREMENT_STATUS[status_code])
 
     def pressure_gauges(self):
         return (
-            round(random.uniform(1e-5, 1e-2), 6), (0, MEASUREMENT_STATUS[0]),
-            round(random.uniform(1e-5, 1e-2), 6), (0, MEASUREMENT_STATUS[0])
+            round(random.uniform(1e-7, 2e-7), 9), (0, MEASUREMENT_STATUS[0]),
+            round(random.uniform(1e-6, 2e-6), 8), (0, MEASUREMENT_STATUS[0])
         )
 
     def gauge_identification(self):
@@ -304,8 +301,12 @@ class MockTPG26x:
 
     def open_port(self):
         self._open = True
-        print("Mock serial port open")
+        message = "Mock serial port open"
+        print(message)
+        return message
 
     def close_port(self):
         self._open = False
-        print("Mock serial port closed")
+        message = "Mock serial port closed"
+        print(message)
+        return message
