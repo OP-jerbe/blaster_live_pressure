@@ -5,7 +5,7 @@ Vacuum:
 * TPG 262 and TPG 261 Dual Gauge. Dual-Channel Measurement and Control
     Unit for Compact Gauges
 """
-
+import random
 import serial
 import time
 
@@ -270,3 +270,42 @@ class TPG261(TPG26x):
         :type baudrate: int
         """
         super(TPG261, self).__init__(port=port, baudrate=baudrate)
+
+
+
+class MockTPG26x:
+    """Mock version of the TPG26x driver for testing without hardware."""
+
+    def __init__(self, *args, **kwargs):
+        self._open = True
+
+    def program_number(self):
+        return "Mock Firmware v1.0"
+
+    def pressure_gauge(self, gauge=1):
+        value = round(random.uniform(1e-5, 1e-2), 6)  # Random pressure
+        status_code = 0
+        return value, (status_code, MEASUREMENT_STATUS[status_code])
+
+    def pressure_gauges(self):
+        return (
+            round(random.uniform(1e-5, 1e-2), 6), (0, MEASUREMENT_STATUS[0]),
+            round(random.uniform(1e-5, 1e-2), 6), (0, MEASUREMENT_STATUS[0])
+        )
+
+    def gauge_identification(self):
+        return 'TPR', GAUGE_IDS['TPR'], 'IKR9', GAUGE_IDS['IKR9']
+
+    def pressure_unit(self):
+        return PRESSURE_UNITS[0]
+
+    def rs232_communication_test(self):
+        return True
+
+    def open_port(self):
+        self._open = True
+        print("Mock serial port open")
+
+    def close_port(self):
+        self._open = False
+        print("Mock serial port closed")
