@@ -1,25 +1,25 @@
 import matplotlib.pyplot as plt
 from matplotlib.lines import Line2D
-import datetime
+from datetime import datetime
 from itertools import count
 from matplotlib.animation import FuncAnimation
 from pfeiffer_tpg26x import TPG261, SimulateTPG26x
 
 
-SIMULATION = True
+SIMULATION: bool = True
 
-COM_PORT = 'COM6'
+COM_PORT: str = 'COM6'
 
-X_AXIS_WINDOW_RANGE = 30*1 # seconds*minutes
+X_AXIS_WINDOW_RANGE: float = 30*1 # seconds*minutes
 
 
-def init_gauge_controller(simulation=False) -> SimulateTPG26x | TPG261:
+def init_gauge_controller(simulation: bool=False) -> SimulateTPG26x | TPG261:
     if simulation:
         return SimulateTPG26x()
     else:
         return TPG261(port=COM_PORT)
 
-def getPressure():
+def getPressure() -> float:
     """Gets the current pressure reading from gauge controller"""
     pressureRead, (status_code, status_string) = tpg.pressure_gauge(1)
     if status_code != 0:
@@ -29,12 +29,12 @@ def getPressure():
     return pressureRead
 
 
-tpg = init_gauge_controller(simulation=SIMULATION)
+tpg: TPG261 | SimulateTPG26x = init_gauge_controller(simulation=SIMULATION)
 
-x_vals = []
-pressure_log = []
-time_log = []
-index = count()
+x_vals: list[int] = []
+pressure_log: list[float] = []
+time_log: list[datetime] = [] # should probably just be a list of datetime.datetime
+index: count = count()
 
 fig, ax = plt.subplots(frameon=True, edgecolor='k', linewidth=2, figsize=(4,3), dpi=290)
 line, = ax.plot([], [], c='tab:blue', label='Pressure', linewidth=1, marker='o', markersize=2)
@@ -51,7 +51,7 @@ def animate(_) -> tuple[Line2D]:
     try:
         pressure_reading = getPressure()
         pressure_log.append(float(pressure_reading))
-        time_log.append(datetime.datetime.now().strftime('%m/%d/%Y %I:%M:%S %p'))
+        time_log.append(datetime.now())
         x_vals.append(next(index))
     except:
         print('Did not record pressure data.')
@@ -81,7 +81,7 @@ def animate(_) -> tuple[Line2D]:
     return line,
 
 try:
-    ani = FuncAnimation(fig, animate, interval=1000, cache_frame_data=False)
+    ani: FuncAnimation = FuncAnimation(fig, animate, interval=1000, cache_frame_data=False)
     plt.show()
 finally:
     tpg.close_port()
