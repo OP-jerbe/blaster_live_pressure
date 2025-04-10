@@ -97,7 +97,6 @@ def run_animation(
         ani: FuncAnimation = FuncAnimation(  # noqa: F841
             fig, animate, interval=10, cache_frame_data=False
         )
-        # fig.canvas.mpl_connect('close_event', plot_full_log)
         plt.show()
     finally:
         gauge_controller.close_port()
@@ -135,16 +134,16 @@ def plot_full_log(
 
 
 def main() -> None:
-    COM_PORT: str = 'COM6'  # 'COM6' for AGC-100, 'COM4' for pfeiffer
-    SECONDS: int = 60
-    MINUTES: int = 60
-    HOURS: int = 1
+    com_port: str = 'COM6'  # 'COM6' for AGC-100, 'COM4' for pfeiffer
+    seconds: int = 60
+    minutes: int = 60
+    hours: int = 1
     x_axis_window_range: float = (
-        SECONDS * MINUTES * HOURS
+        seconds * minutes * hours
     )  # ex: 60*1*1 = one minute; 60*60*1 = one hour; 60*60*6 = six hours
 
     gauge_controller: GaugeController1 | SimGaugeControllerx | None = (
-        init_gauge_controller(com_port=COM_PORT, simulation=SIMULATION)
+        init_gauge_controller(com_port=com_port, simulation=SIMULATION)
     )
 
     if gauge_controller is None:
