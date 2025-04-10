@@ -2,6 +2,7 @@ import sys
 from datetime import datetime
 from itertools import count
 
+import matplotlib.dates as mdates
 import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
 from matplotlib.lines import Line2D
@@ -30,7 +31,7 @@ def init_gauge_controller(
         try:
             GaugeController1(port=COM_PORT)
         except SerialException as se:
-            print(f'Exception: {se}')
+            print(f'{se}')
             return
 
 
@@ -50,7 +51,7 @@ time_log: list[datetime] = []
 index: count = count()
 
 fig, ax = plt.subplots(
-    frameon=True, edgecolor='k', linewidth=2, figsize=(4, 3), dpi=290
+    frameon=True, edgecolor='k', linewidth=2, figsize=(6, 4), dpi=200
 )
 (line,) = ax.plot(
     [], [], c='tab:blue', label='Pressure', linewidth=1, marker='o', markersize=2
@@ -105,11 +106,39 @@ def animate(_) -> tuple[Line2D]:
     return (line,)
 
 
+def plot_full_log(event=None) -> None:
+    if not time_log or not pressure_log:
+        print('No data to plot.')
+        return
+
+    time_numeric = mdates.date2num(time_log)
+    fig2, ax2 = plt.subplots(figsize=(6, 4), dpi=200)
+    fig2.autofmt_xdate()
+    ax2.plot(
+        time_numeric,
+        pressure_log,
+        c='tab:blue',
+        linewidth=1,
+        marker='o',
+        markersize=2,
+    )
+    ax2.set_title('Full Pressure Log')
+    ax2.tick_params(axis='both', which='both', labelsize=6)
+    ax2.xaxis_date()
+    ax2.set_xlabel('Time (s)', fontsize=8)
+    ax2.set_ylabel('Pressure (mBar)', fontsize=8)
+    ax2.set_yscale('log')
+    ax2.grid(True, which='both')
+    plt.tight_layout()
+    plt.show()
+
+
 if gauge_controller is not None:
     try:
         ani: FuncAnimation = FuncAnimation(
-            fig, animate, interval=1000, cache_frame_data=False
+            fig, animate, interval=10, cache_frame_data=False
         )
+        fig.canvas.mpl_connect('close_event', plot_full_log)
         plt.show()
     finally:
         gauge_controller.close_port()
