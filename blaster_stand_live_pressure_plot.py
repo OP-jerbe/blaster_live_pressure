@@ -1,37 +1,60 @@
-import matplotlib.pyplot as plt
-from matplotlib.lines import Line2D
+import sys
 from datetime import datetime
 from itertools import count
-from matplotlib.animation import FuncAnimation
-from pfeiffer_tpg26x import TPG261, SimulateTPG26x
 
+import matplotlib.pyplot as plt
+from matplotlib.animation import FuncAnimation
+from matplotlib.lines import Line2D
+from serial.serialutil import SerialException
+
+from gauge_controller import GaugeController1, SimGaugeControllerx
 
 SIMULATION: bool = True
 
-COM_PORT: str = 'COM6' # 'COM6' for AGC-100, 'COM4' for pfeiffer
+COM_PORT: str = 'COM6'  # 'COM6' for AGC-100, 'COM4' for pfeiffer
 
-SECONDS: int = 60
-MINUTES: int = 60
+SECONDS: int = 10
+MINUTES: int = 1
 HOURS: int = 1
-X_AXIS_WINDOW_RANGE: float = SECONDS * MINUTES * HOURS # ex: 60*1*1 = one minute; 60*60*1 = one hour; 60*60*6 = six hours
+X_AXIS_WINDOW_RANGE: float = (
+    SECONDS * MINUTES * HOURS
+)  # ex: 60*1*1 = one minute; 60*60*1 = one hour; 60*60*6 = six hours
 
 
-def init_gauge_controller(simulation: bool) -> SimulateTPG26x | TPG261:
+def init_gauge_controller(
+    simulation: bool,
+) -> SimGaugeControllerx | GaugeController1 | None:
     if simulation:
-        return SimulateTPG26x()
+        return SimGaugeControllerx()
     else:
-        return TPG261(port=COM_PORT)
+        try:
+            GaugeController1(port=COM_PORT)
+        except SerialException as se:
+            print(f'Exception: {se}')
+            return
 
 
-tpg: TPG261 | SimulateTPG26x = init_gauge_controller(simulation=SIMULATION)
+gauge_controller: GaugeController1 | SimGaugeControllerx | None = init_gauge_controller(
+    simulation=SIMULATION
+)
+
+
+if gauge_controller is None:
+    print('Could not connect to pressure gauge controller.')
+    sys.exit()
+
 
 x_vals: list[int] = []
 pressure_log: list[float] = []
-time_log: list[datetime] = [] # should probably just be a list of datetime.datetime
+time_log: list[datetime] = []
 index: count = count()
 
-fig, ax = plt.subplots(frameon=True, edgecolor='k', linewidth=2, figsize=(4,3), dpi=290)
-line, = ax.plot([], [], c='tab:blue', label='Pressure', linewidth=1, marker='o', markersize=2)
+fig, ax = plt.subplots(
+    frameon=True, edgecolor='k', linewidth=2, figsize=(4, 3), dpi=290
+)
+(line,) = ax.plot(
+    [], [], c='tab:blue', label='Pressure', linewidth=1, marker='o', markersize=2
+)
 
 if SIMULATION:
     ax.set_title('Simulated Blaster Pressure Log')
@@ -45,13 +68,17 @@ ax.grid(True, which='both')
 
 
 def animate(_) -> tuple[Line2D]:
-    try:
-        pressure_reading, _ = tpg.pressure_gauge()
+    assert gauge_controller is not None
+    pressure_reading, status = gauge_controller.pressure_gauge()
+    if status[1] == 'Measurement data okay':
         pressure_log.append(float(pressure_reading))
         time_log.append(datetime.now())
         x_vals.append(next(index))
-    except:
-        print('Did not record pressure data.')
+    else:
+        message = (
+            'Pressure Measurement not recorded.\nGauge Controller Status: {status}'
+        )
+        print(message)
 
     # Trim data
     if len(x_vals) > X_AXIS_WINDOW_RANGE:
@@ -65,7 +92,7 @@ def animate(_) -> tuple[Line2D]:
     if len(x_vals) > 1:
         ax.set_xlim(max(0, x_vals[-1] - X_AXIS_WINDOW_RANGE), x_vals[-1])
     else:
-        ax.set_xlim(0,1)
+        ax.set_xlim(0, 1)
     if ydata:
         ax.set_ylim(0.98 * min(ydata), 1.02 * max(ydata))
 
@@ -75,10 +102,14 @@ def animate(_) -> tuple[Line2D]:
 
     fig.tight_layout()
 
-    return line,
+    return (line,)
 
-try:
-    ani: FuncAnimation = FuncAnimation(fig, animate, interval=1000, cache_frame_data=False)
-    plt.show()
-finally:
-    tpg.close_port()
+
+if gauge_controller is not None:
+    try:
+        ani: FuncAnimation = FuncAnimation(
+            fig, animate, interval=1000, cache_frame_data=False
+        )
+        plt.show()
+    finally:
+        gauge_controller.close_port()
