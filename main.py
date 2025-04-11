@@ -27,6 +27,11 @@ def init_gauge_controller(
             GaugeController1(port=com_port)
         except SerialException:
             return
+        except Exception as e:
+            fatal_error_message(
+                f'A fatal error occured while attempting to connect to the gauge controller.\n\n{e}'
+            )
+            sys.exit()
 
 
 def create_animation_figure() -> tuple[Figure, Axes, tuple[Line2D]]:
@@ -149,12 +154,19 @@ def get_user_config() -> tuple[str, int]:
     return com_port, x_axis_window_range
 
 
-def error_message(message: str, title: str = 'Error') -> bool:
+def connection_error_message(message: str, title: str = 'Error') -> bool:
     root = tk.Tk()
     root.withdraw()
     retry = messagebox.askretrycancel(title, message)
     root.destroy()
     return retry
+
+
+def fatal_error_message(message: str, title: str = 'Fatal Error') -> None:
+    root = tk.Tk()
+    root.withdraw()
+    messagebox.showerror(title, message)
+    root.destroy()
 
 
 def main() -> None:
@@ -168,7 +180,7 @@ def main() -> None:
         gauge_controller = init_gauge_controller(com_port=com_port)
 
         if gauge_controller is None:
-            retry = error_message(
+            retry = connection_error_message(
                 'Could not connect to pressure gauge controller. Try again?'
             )
             if not retry:
