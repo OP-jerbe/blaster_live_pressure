@@ -156,6 +156,7 @@ def main() -> None:
     )
 
     if gauge_controller is None:
+        # TO DO: change print statement to error pop up window (ask to try to reconnect?)
         print('Could not connect to pressure gauge controller.')
         sys.exit()
 
