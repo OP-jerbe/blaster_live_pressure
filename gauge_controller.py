@@ -5,6 +5,7 @@ Vacuum:
     Unit for Compact Gauges
 """
 
+import math
 import random
 import time
 
@@ -278,9 +279,17 @@ class SimGaugeControllerx:
 
     def __init__(self, *args, **kwargs) -> None:
         self._open = True
+        self._iteration = 0
+        self._A = 1e-6  # Initial pressure
+        self._k = 0.15  # Decay rate — tweak as needed
+        self._noise_amplitude = 1e-9  # Small random fluctuation
+        self._P_min = 5e-8  # Floor value for pressure
 
     def pressure_gauge(self, gauge=1) -> tuple[float, tuple[int, str]]:
-        value = round(random.uniform(1e-7, 2e-7), 9)  # Random pressure
+        _decay = self._A * math.exp(-self._k * self._iteration)
+        _noise = random.uniform(-self._noise_amplitude, self._noise_amplitude)
+        value = round(self._P_min + _decay + _noise, 9)
+        self._iteration += 1
         status_code = 0
         return value, (status_code, MEASUREMENT_STATUS[status_code])
 

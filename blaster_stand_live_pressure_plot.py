@@ -1,23 +1,24 @@
 import sys
+from configparser import ConfigParser
 from datetime import datetime
 from itertools import count
 
-from matplotlib.axes import Axes
-from matplotlib.figure import Figure
 import matplotlib.dates as mdates
 import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
+from matplotlib.axes import Axes
+from matplotlib.figure import Figure
 from matplotlib.lines import Line2D
 from serial.serialutil import SerialException
 
 from gauge_controller import GaugeController1, SimGaugeControllerx
+from ini_reader import find_comport, find_selection, get_ini_filepath, load_ini
 
 
 def init_gauge_controller(
     com_port: str,
-    simulation: bool = False,
 ) -> SimGaugeControllerx | GaugeController1 | None:
-    if simulation:
+    if com_port == 'Sim':
         return SimGaugeControllerx()
     else:
         try:
@@ -35,10 +36,7 @@ def create_animation_figure() -> tuple[Figure, Axes, tuple[Line2D]]:
         [], [], c='tab:blue', label='Pressure', linewidth=1, marker='o', markersize=2
     )
 
-    if SIMULATION:
-        ax.set_title('Simulated Blaster Pressure Log')
-    else:
-        ax.set_title('Blaster Pressure Log')
+    ax.set_title('Blaster Pressure Log')
     ax.set_yscale('log')
     ax.tick_params(axis='both', which='both', labelsize=6)
     ax.set_xlabel('Time (s)', fontsize=8)
@@ -94,8 +92,8 @@ def run_animation(
         return (line,)
 
     try:
-        ani: FuncAnimation = FuncAnimation(  # noqa: F841
-            fig, animate, interval=10, cache_frame_data=False
+        ani: FuncAnimation = FuncAnimation(
+            fig, animate, interval=1000, cache_frame_data=False
         )
         plt.show()
     finally:
@@ -104,9 +102,7 @@ def run_animation(
     plot_full_log(time_log, pressure_log)
 
 
-def plot_full_log(
-    time_log: list[datetime], pressure_log: list[float], event=None
-) -> None:
+def plot_full_log(time_log: list[datetime], pressure_log: list[float]) -> None:
     if not time_log or not pressure_log:
         print('No data to plot.')
         return
@@ -133,17 +129,30 @@ def plot_full_log(
     plt.show()
 
 
+def get_user_config() -> tuple[str, int]:
+    ini_filepath: str = get_ini_filepath()
+    config_data: ConfigParser = load_ini(ini_filepath)
+    com_port: str = find_comport(config_data, 'Pressure_Gauge')
+    try:
+        seconds: int = int(find_selection(config_data, 'Window_Range', 'seconds'))
+        minutes: int = int(find_selection(config_data, 'Window_Range', 'minutes'))
+        hours: int = int(find_selection(config_data, 'Window_Range', 'hours'))
+        days: int = int(find_selection(config_data, 'Window_Range', 'days'))
+    except (TypeError, ValueError) as e:
+        raise ValueError(
+            "Invalid input in 'Window_Range': all time values must be integers. Check configuration.ini file in the configuration folder."
+        ) from e
+
+    x_axis_window_range: float = seconds * minutes * hours * days
+
+    return com_port, x_axis_window_range
+
+
 def main() -> None:
-    com_port: str = 'COM6'  # 'COM6' for AGC-100, 'COM4' for pfeiffer
-    seconds: int = 60
-    minutes: int = 60
-    hours: int = 1
-    x_axis_window_range: float = (
-        seconds * minutes * hours
-    )  # ex: 60*1*1 = one minute; 60*60*1 = one hour; 60*60*6 = six hours
+    com_port, x_axis_window_range = get_user_config()
 
     gauge_controller: GaugeController1 | SimGaugeControllerx | None = (
-        init_gauge_controller(com_port=com_port, simulation=SIMULATION)
+        init_gauge_controller(com_port=com_port)
     )
 
     if gauge_controller is None:
@@ -154,5 +163,4 @@ def main() -> None:
 
 
 if __name__ == '__main__':
-    SIMULATION: bool = True
     main()

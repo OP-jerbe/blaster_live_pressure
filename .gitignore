@@ -1,1 +1,6 @@
 /__pycache__
+/dist
+/build/main/
+/results
+/configuration/configuration.ini
+pyinstaller_command.txt
