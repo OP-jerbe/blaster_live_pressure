@@ -2,5 +2,6 @@
 /dist
 /build/main/
 /results
-/configuration/configuration.ini
+/configuration
+/icon
 pyinstaller_command.txt
