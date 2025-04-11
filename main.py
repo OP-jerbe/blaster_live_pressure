@@ -1,4 +1,6 @@
 import sys
+import tkinter as tk
+from tkinter import messagebox
 from configparser import ConfigParser
 from datetime import datetime
 from itertools import count
@@ -23,8 +25,7 @@ def init_gauge_controller(
     else:
         try:
             GaugeController1(port=com_port)
-        except SerialException as se:
-            print(f'{se}')
+        except SerialException:
             return
 
 
@@ -148,6 +149,14 @@ def get_user_config() -> tuple[str, int]:
     return com_port, x_axis_window_range
 
 
+def error_message(message: str, title: str = 'Error') -> bool:
+    root = tk.Tk()
+    root.withdraw()
+    retry = messagebox.askretrycancel(title, message)
+    root.destroy()
+    return retry
+
+
 def main() -> None:
     com_port, x_axis_window_range = get_user_config()
 
@@ -155,10 +164,15 @@ def main() -> None:
         init_gauge_controller(com_port=com_port)
     )
 
-    if gauge_controller is None:
-        # TO DO: change print statement to error pop up window (ask to try to reconnect?)
-        print('Could not connect to pressure gauge controller.')
-        sys.exit()
+    while gauge_controller is None:
+        gauge_controller = init_gauge_controller(com_port=com_port)
+
+        if gauge_controller is None:
+            retry = error_message(
+                'Could not connect to pressure gauge controller. Try again?'
+            )
+            if not retry:
+                sys.exit()
 
     run_animation(gauge_controller, x_axis_window_range)
 
