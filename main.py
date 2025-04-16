@@ -1,9 +1,9 @@
 import sys
 import tkinter as tk
-from tkinter import messagebox
 from configparser import ConfigParser
 from datetime import datetime
 from itertools import count
+from tkinter import messagebox
 
 import matplotlib.dates as mdates
 import matplotlib.pyplot as plt
