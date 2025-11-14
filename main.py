@@ -98,7 +98,7 @@ def run_animation(
         return (line,)
 
     try:
-        ani: FuncAnimation = FuncAnimation(
+        _: FuncAnimation = FuncAnimation(
             fig, animate, interval=1000, cache_frame_data=False
         )
         plt.show()
